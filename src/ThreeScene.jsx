@@ -25,9 +25,9 @@ const ANIMATION = {
     sequences: 3,
     
     // Zoom settings - more dramatic zoom
-    zoomedIn: 8, // Closer zoom (was 8)
-    zoomedOut: 20, // Further out (was 15)
-    zoomSpeed: 0.08, // Faster zoom speed (was 0.05)
+    zoomedIn: 8,
+    zoomedOut: 20, 
+    zoomSpeed: 0.08,
     
     // Percentage of total scroll for initial zoom in
     zoomInStart: 0.05,
@@ -38,16 +38,15 @@ const ANIMATION = {
     zoomOutEnd: 0.95,
     
     // Rotation speed multipliers
-    fastRotationSpeed: 4, // Faster rotation (was 3)
-    slowRotationSpeed: 0.4, // Slower rotation (was 0.5)
+    fastRotationSpeed: 4,
+    slowRotationSpeed: 0.4,
     
     // Rotation cycle distribution (as proportions of each sequence)
-    fastRotationProportion: 0.75, // 1.5 turns = 75% of the sequence
-    slowRotationProportion: 0.25, // 0.5 turns = 25% of the sequence
-    
+    fastRotationProportion: 0.75,
+    slowRotationProportion: 0.25, 
     // Base speeds
-    baseRotationSpeed: 0.15, // Increased from 0.1
-    basePositionSpeed: 0.1 // Increased from 0.08
+    baseRotationSpeed: 0.15,
+    basePositionSpeed: 0.1 
 };
 
 // Object settings
@@ -69,6 +68,13 @@ const ThreeScene = () => {
     const lastScrollPositionRef = useRef(0);
     const targetRotationRef = useRef(0);
     const currentRotationRef = useRef(0);
+    const needsRenderRef = useRef(true);
+    const lastRenderedScrollRef = useRef(-1);
+    const scrollTimeoutRef = useRef(null);
+    const lastRenderTimeRef = useRef(0);
+    const rendererRef = useRef(null);
+    const sceneRef = useRef(null);
+    const cameraRef = useRef(null);
 
     useEffect(() => {
         if (!mountRef.current) return;
@@ -76,12 +82,15 @@ const ThreeScene = () => {
         // Scene setup
         const scene = new THREE.Scene();
         scene.fog = new THREE.Fog(0x000000, 1, 1000);
+        sceneRef.current = scene;
 
         // Camera setup
         const camera = setupCamera();
+        cameraRef.current = camera;
 
         // Renderer setup
         const renderer = setupRenderer();
+        rendererRef.current = renderer;
         mountRef.current.appendChild(renderer.domElement);
 
         // Lighting setup
@@ -90,12 +99,26 @@ const ThreeScene = () => {
         // Load 3D model
         loadModel(scene);
 
-        // Handle scroll with direction detection
+        // Handle scroll with debounce and render flagging
         const handleScroll = () => {
+            // Clear previous timeout
+            clearTimeout(scrollTimeoutRef.current);
+            
+            // Update scroll values immediately
             const currentScroll = window.scrollY;
             isScrollingUpRef.current = currentScroll < lastScrollPositionRef.current;
             lastScrollPositionRef.current = currentScroll;
             scrollRef.current = currentScroll;
+            
+            // Set flag to render on next frame if scroll position changed significantly
+            if (Math.abs(lastRenderedScrollRef.current - currentScroll) > 2) {
+                needsRenderRef.current = true;
+            }
+            
+            // Schedule one final render after scrolling stops
+            scrollTimeoutRef.current = setTimeout(() => {
+                needsRenderRef.current = true;
+            }, 50);
         };
 
         window.addEventListener('scroll', handleScroll);
@@ -109,6 +132,7 @@ const ThreeScene = () => {
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                needsRenderRef.current = true;
             }, 100);
         };
 
@@ -119,6 +143,8 @@ const ThreeScene = () => {
         return () => {
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('scroll', handleScroll);
+            clearTimeout(scrollTimeoutRef.current);
+            
             if (mountRef.current && renderer.domElement) {
                 mountRef.current.removeChild(renderer.domElement);
             }
@@ -229,11 +255,14 @@ const ThreeScene = () => {
                 OBJ_PATH,
                 (object) => {
                     setupObject(object, scene);
-                    setupAnimation(object, renderer, camera, scene);
+                    setupOptimizedAnimation();
                     
                     // Set initial camera state - zoomed out
                     camera.position.z = ANIMATION.zoomedOut;
                     cameraZRef.current = ANIMATION.zoomedOut;
+                    
+                    // Force initial render
+                    needsRenderRef.current = true;
                 },
                 (xhr) => console.log((xhr.loaded / xhr.total) * 100 + '% loaded'),
                 (error) => console.error('Error loading OBJ:', error)
@@ -258,11 +287,33 @@ const ThreeScene = () => {
             scene.add(object);
         }
 
-        function setupAnimation(object, renderer, camera, scene) {
-            const animate = () => {
+        function setupOptimizedAnimation() {
+            const targetFrameRate = 60; // Target frame rate
+            const frameInterval = 1000 / targetFrameRate;
+            
+            const animate = (timestamp) => {
                 frameRef.current = requestAnimationFrame(animate);
-
-                if (object) {
+                
+                const deltaTime = timestamp - lastRenderTimeRef.current;
+                const object = objectRef.current;
+                
+                // Check if we need to render this frame
+                const shouldRender = (
+                    // If manual render flag is set
+                    needsRenderRef.current ||
+                    
+                    // If we're in a transition state
+                    (object && (
+                        Math.abs(cameraRef.current.position.z - cameraZRef.current) > 0.01 ||
+                        Math.abs(object.rotation.y - currentRotationRef.current) > 0.01 ||
+                        Math.abs(object.position.y - calculateTargetY()) > 0.01
+                    )) ||
+                    
+                    // Frame rate limiting
+                    deltaTime >= frameInterval
+                );
+                
+                if (object && shouldRender) {
                     // Get normalized scroll progress (0 to 1)
                     const normalizedScroll = scrollRef.current / ANIMATION.totalScrollHeight;
                     
@@ -279,18 +330,36 @@ const ThreeScene = () => {
                     updateObjectPosition(object, normalizedScroll);
                     
                     // Apply camera position with smooth transition
-                    camera.position.z = THREE.MathUtils.lerp(
-                        camera.position.z, 
+                    cameraRef.current.position.z = THREE.MathUtils.lerp(
+                        cameraRef.current.position.z, 
                         cameraZRef.current, 
                         ANIMATION.zoomSpeed
                     );
                     
                     // Render scene
-                    renderer.render(scene, camera);
+                    rendererRef.current.render(sceneRef.current, cameraRef.current);
+                    
+                    // Update tracking variables
+                    lastRenderTimeRef.current = timestamp;
+                    lastRenderedScrollRef.current = scrollRef.current;
+                    needsRenderRef.current = false;
                 }
             };
 
-            animate();
+            animate(0);
+        }
+        
+        function calculateTargetY() {
+            const normalizedScroll = scrollRef.current / ANIMATION.totalScrollHeight;
+            const basePosition = OBJECT_SETTINGS.initialY + 
+                (normalizedScroll * OBJECT_SETTINGS.verticalRange);
+            
+            // Add subtle wave motion based on rotation
+            const waveIntensity = 0.2;
+            const waveFrequency = 1.5;
+            const waveOffset = Math.sin(normalizedScroll * Math.PI * waveFrequency) * waveIntensity;
+            
+            return basePosition + waveOffset;
         }
         
         function updateCameraZoom(normalizedScroll) {
@@ -390,15 +459,7 @@ const ThreeScene = () => {
         
         function updateObjectPosition(object, normalizedScroll) {
             // Calculate vertical position based on scroll with a slight wave effect
-            const basePosition = OBJECT_SETTINGS.initialY + 
-                (normalizedScroll * OBJECT_SETTINGS.verticalRange);
-            
-            // Add subtle wave motion based on rotation
-            const waveIntensity = 0.2;
-            const waveFrequency = 1.5;
-            const waveOffset = Math.sin(normalizedScroll * Math.PI * waveFrequency) * waveIntensity;
-            
-            const targetPositionY = basePosition + waveOffset;
+            const targetPositionY = calculateTargetY();
             
             // Apply smooth position change
             object.position.y = THREE.MathUtils.lerp(
@@ -437,3 +498,73 @@ const ThreeScene = () => {
 };
 
 export default ThreeScene;
+
+/*
+Documentation for ThreeScene:
+--------------
+
+1. Component Overview:
+    ThreeScene is a React component that creates an interactive 3D scene with a model of Mohammed VI Tower
+    that animates based on scroll position, optimized to minimize impact on UI performance.
+
+2. Key Features:
+    - Scroll-based animation with performance optimization
+    - Render-on-demand system to reduce GPU/CPU usage
+    - Dynamic camera zooming
+    - Smooth rotation sequences
+    - Responsive design
+    - Multiple lighting sources
+
+3. Key Constants:
+    - ANIMATION: Controls scroll height, zoom levels, and rotation speeds
+    - CAMERA_SETTINGS: Defines camera properties
+    - OBJECT_SETTINGS: Controls 3D model positioning and scale
+
+4. Optimization Techniques:
+    - Only renders when necessary (scroll changes, transitions active)
+    - Debounced scroll handler
+    - Frame rate limiting
+    - Separate state tracking for rendering needs
+
+5. Requirements:
+    - Three.js library
+    - MTL and OBJ model files
+    - React 16.8+ (for hooks support)
+
+6. Installation:
+    ```bash or powershell
+    npm install three @types/three
+    ```
+
+7. Usage:
+    ```jsx
+    import ThreeScene from './ThreeScene';
+    
+    function App() {
+      return <ThreeScene />;
+    }
+    ```
+
+Testing Instructions:
+--------------------
+
+1. Visual Testing:
+    - Verify smooth scrolling with minimal impact on page animations
+    - Test initial zoom-in animation (0-10% scroll)
+    - Test rotation sequences (10-90% scroll)
+    - Test final zoom-out animation (90-100% scroll)
+    - Check model lighting from different angles
+
+2. Performance Testing:
+    - Monitor FPS using browser dev tools during scrolling
+    - Verify reduced GPU/CPU usage during static moments
+
+3. Edge Cases:
+    - Test rapid scrolling
+    - Test browser refresh at different scroll positions
+
+Known Limitations:
+-----------------
+1. Requires WebGL support
+2. Optimization is designed for scroll-based animation specifically
+*/
