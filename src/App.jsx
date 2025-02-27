@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef,useMemo } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import ThreeScene from "./ThreeScene";
 import AnimatedSlides from "./AnimatedSlides";
 import Lenis from '@studio-freight/lenis';
@@ -127,6 +127,18 @@ function App() {
   
   return (
     <div className="app-container">
+      {/* AnimatedSlides positioned behind ThreeScene */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        zIndex: 5 // Lower zIndex to appear behind ThreeScene
+      }}>
+        <AnimatedSlides scrollPercentage={mainAnimationPercentage} />
+      </div>
+      
       {/* Container for ThreeScene with left-side positioning */}
       <div 
         ref={threeSceneContainerRef}
@@ -137,7 +149,7 @@ function App() {
           left: 0,
           width: '100%',
           height: '100%',
-          zIndex: 10,
+          zIndex: 10, // Higher zIndex to appear in front
           ...containerStyles
         }}
       >
@@ -146,16 +158,13 @@ function App() {
           scrollPosition={scrollPositionRef.current} 
           throttleFps={THREEJS_FPS_LIMIT}
         />
-      </div>
-      
-      {/* Optimized Animated Slides - Pass the normalized animation percentage */}
-      <AnimatedSlides scrollPercentage={mainAnimationPercentage} />
+       </div>
       
       {/* Scrollable content area */}
       <div 
         className="scroll-content" 
         style={{ 
-          height: '15000px',
+          height: '5500px',
           position: 'relative',
           zIndex: 1
         }} 
