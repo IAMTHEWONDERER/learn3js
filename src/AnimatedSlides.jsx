@@ -5,20 +5,17 @@ const AnimatedSlides = ({ scrollPercentage }) => {
         {
             title: "Modern Architecture",
             description: "Innovative designs reshaping our urban landscape",
-            number: "01",
-            svgPath: "M10,50 Q25,25 40,50 T70,50"
+            number: "01"
         },
         {   
             title: "Sustainable Building",
             description: "Creating eco-friendly structures for a better tomorrow",
-            number: "02",
-            svgPath: "M10,30 Q40,10 50,50 T90,40"
+            number: "02"
         },
         {
             title: "Urban Living",
             description: "Redefining city life through thoughtful design",
-            number: "03",
-            svgPath: "M10,60 Q30,20 50,60 T90,30"
+            number: "03"
         }
     ];
 
@@ -73,8 +70,8 @@ const AnimatedSlides = ({ scrollPercentage }) => {
             return {
                 position: 'absolute',
                 right: '15%',
-                width: '60%', // Increased from 50% to 60% for more space
-                maxWidth: '700px', // Increased from 600px to 700px
+                width: '60%',
+                maxWidth: '700px',
                 padding: '2rem',
                 transform: `translateX(${translateX})`,
                 opacity: opacity,
@@ -105,76 +102,13 @@ const AnimatedSlides = ({ scrollPercentage }) => {
                     className="slide"
                     style={slideStyles[index]}
                 >
-                    {/* SVG moved before the number to position it behind */}
-                    <div className="slide-svg"
-                        style={{
-                            position: 'absolute',
-                            top: '30%',
-                            left: '50%', // Adjusted from 70% to 50%
-                            transform: 'translate(-50%, -50%)',
-                            width: '100%', // Increased from 80% to 100%
-                            height: '100%', // Increased from 80% to 100%
-                            zIndex: -1, // Ensures it stays behind text
-                            animation: 'float 6s ease-in-out infinite'
-                        }}>
-                        <svg 
-                            viewBox="0 0 100 100" 
-                            width="100%" 
-                            height="100%"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <circle cx="50" cy="50" r="20" fill="#aadbed" opacity="0.3">
-                                <animate
-                                    attributeName="cx"
-                                    values="50;52;50;48;50"
-                                    dur="4s"
-                                    repeatCount="indefinite"
-                                />
-                                <animate
-                                    attributeName="cy"
-                                    values="50;48;50;52;50"
-                                    dur="4s"
-                                    repeatCount="indefinite"
-                                />
-                            </circle>
-                            <circle cx="45" cy="45" r="15" fill="#0a3c5c" opacity="0.2">
-                                <animate
-                                    attributeName="cx"
-                                    values="45;47;45;43;45"
-                                    dur="5s"
-                                    repeatCount="indefinite"
-                                />
-                                <animate
-                                    attributeName="cy"
-                                    values="45;43;45;47;45"
-                                    dur="5s"
-                                    repeatCount="indefinite"
-                                />
-                            </circle>
-                            <circle cx="55" cy="55" r="10" fill="#c8710d" opacity="0.1">
-                                <animate
-                                    attributeName="cx"
-                                    values="55;57;55;53;55"
-                                    dur="6s"
-                                    repeatCount="indefinite"
-                                />
-                                <animate
-                                    attributeName="cy"
-                                    values="55;53;55;57;55"
-                                    dur="6s"
-                                    repeatCount="indefinite"
-                                />
-                            </circle>
-                        </svg>
-                    </div>
-
                     <div className="slide-number" 
                         style={{
                             fontSize: 'clamp(6rem, 12vw, 10rem)',
                             fontFamily: 'Quinn, sans-serif',
                             fontWeight: 'bold',
                             opacity: 0.8,
-                            marginBottom: '-5rem',
+                            marginBottom: '-10rem',
                             color: '#c8710d',
                             position: 'relative',
                             zIndex: 1
@@ -184,16 +118,16 @@ const AnimatedSlides = ({ scrollPercentage }) => {
                     
                     <h2 className="slide-title"
                         style={{
-                            fontSize: 'clamp(4rem, 8vw, 7rem)', // Increased from 3rem to 4rem
+                            fontSize: 'clamp(4rem, 8vw, 7rem)',
                             fontFamily: 'Quinn, sans-serif',
                             fontWeight: 'bold',
                             marginBottom: '1rem',
                             color: '#0a3c5c',
                             position: 'relative',
                             zIndex: 2,
-                            whiteSpace: 'nowrap', // Ensures title stays on one line
-                            overflow: 'visible', // Allows text to extend if needed
-                            width: '100%' // Ensures full width usage
+                            whiteSpace: 'nowrap',
+                            overflow: 'visible',
+                            width: '100%'
                         }}>
                         {slide.title}
                     </h2>
