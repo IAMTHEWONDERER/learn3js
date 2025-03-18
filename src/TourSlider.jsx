@@ -1,30 +1,35 @@
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, SoftShadows } from '@react-three/drei';
-import { useLoader } from '@react-three/fiber';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { Suspense, useRef, useEffect } from 'react';
+import { OrbitControls, Environment, SoftShadows, useGLTF } from '@react-three/drei';
+import { Suspense, useRef, useEffect, useState } from 'react';
+
+// With gltfpack, we don't need the DRACOLoader anymore
+// Just preload the optimized model
+useGLTF.preload("/Htower-optimized.glb");
 
 function Model() {
-    const gltf = useLoader(GLTFLoader, "/Htower.glb");
+    // Simply load the gltfpack-optimized model
+    const { scene } = useGLTF("/Htower-optimized.glb");
     const modelRef = useRef();
-   
+    
     useEffect(() => {
-        if (gltf.scene) {
-            gltf.scene.traverse((child) => {
+        if (scene) {
+            scene.traverse((child) => {
                 if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
+                    // Enable shadows only for larger objects to improve performance
+                    if (child.geometry.boundingSphere && child.geometry.boundingSphere.radius > 1) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
                     
+                    // Optimize materials
                     if (child.material) {
-                        child.material.roughness = 0.7;
-                        child.material.metalness = 0.3;
-                        child.material.envMapIntensity = 1.2;
+                        // Increase base brightness slightly to compensate for removed ambient light
+                        child.material.roughness = 0.65; // Slightly decreased to allow more light reflection
+                        child.material.metalness = 0.35; // Slightly increased to enhance natural light reflection
+                        child.material.envMapIntensity = 1.8; // Increased to compensate for removed ambient light
                         
-                        if (child.material.normalMap) {
-                            child.material.normalScale.set(1.5, 1.5);
-                        }
-                        
+                        // Ensure proper color encoding
                         if (child.material.map) {
                             child.material.map.encoding = THREE.SRGBColorSpace;
                         }
@@ -32,9 +37,9 @@ function Model() {
                 }
             });
         }
-    }, [gltf]);
+    }, [scene]);
    
-    return <primitive ref={modelRef} object={gltf.scene} castShadow receiveShadow />;
+    return <primitive ref={modelRef} object={scene} castShadow receiveShadow />;
 }
 
 function FixedOrbitControls() {
@@ -59,24 +64,25 @@ function FixedOrbitControls() {
             rotateSpeed={0.5}
             minPolarAngle={Math.PI / 2 - Math.PI / 22}
             maxPolarAngle={Math.PI / 2 - Math.PI / 30}
-            distance={150} // Reduced from 200 to zoom in
+            distance={150}
         />
     );
 }
 
-function SingleLightSource() {
+function EnhancedLighting() {
     const lightRef = useRef();
+    const secondaryLightRef = useRef();
     
     useFrame(({ clock }) => {
         if (lightRef.current) {
             const t = clock.getElapsedTime() * 0.05;
             const angle = Math.PI / 4;
-            const radius = 30; // Reduced from 40 to match closer camera
+            const radius = 30;
             
             const distance = radius + Math.sin(t) * 3;
             const x = Math.cos(angle) * distance;
             const z = Math.sin(angle) * distance;
-            const y = 25 + Math.sin(t * 0.5) * 2; // Adjusted height
+            const y = 25 + Math.sin(t * 0.5) * 2;
             
             lightRef.current.position.set(x, y, z);
             lightRef.current.lookAt(0, 0, 0);
@@ -85,22 +91,33 @@ function SingleLightSource() {
     
     return (
         <>
+            {/* Main sun-like directional light with increased intensity */}
             <directionalLight
                 ref={lightRef}
-                position={[20, 25, 20]} // Adjusted for closer view
-                intensity={2.0}
-                color="#ff7e45"
+                position={[20, 25, 20]}
+                intensity={3.0} // Increased from 2.0 to compensate for removed ambient light
+                color="#ff9955" // Warmer color to simulate natural sunlight
                 castShadow={true}
-                shadow-mapSize={[2048, 2048]}
+                shadow-mapSize={[1024, 1024]}
                 shadow-camera-far={300}
-                shadow-camera-left={-75} // Reduced from 100
-                shadow-camera-right={75} // Reduced from 100
-                shadow-camera-top={75} // Reduced from 100
-                shadow-camera-bottom={-75} // Reduced from 100
+                shadow-camera-left={-75}
+                shadow-camera-right={75}
+                shadow-camera-top={75}
+                shadow-camera-bottom={-75}
                 shadow-bias={-0.0001}
                 shadow-radius={3}
             />
-            <ambientLight intensity={0.3} color="#fff" />
+            
+            {/* Secondary fill light to simulate sky light instead of ambient */}
+            <directionalLight
+                ref={secondaryLightRef}
+                position={[-15, 20, -15]}
+                intensity={0.7} // Subtle fill light
+                color="#b3d9ff" // Slightly blue to simulate sky light
+                castShadow={false} // No shadows from fill light for performance
+            />
+            
+            {/* Ground shadow plane */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
                 <planeGeometry args={[500, 500]} />
                 <shadowMaterial attach="material" opacity={0.4} color="#3d2b4b" />
@@ -110,7 +127,7 @@ function SingleLightSource() {
 }
 
 function SunsetFog() {
-    return <fog attach="fog" args={['#f0b07a', 150, 400]} />; // Adjusted fog distance
+    return <fog attach="fog" args={['#f0b07a', 150, 400]} />;
 }
 
 const TourSlider = ({ width, height }) => {
@@ -123,7 +140,6 @@ const TourSlider = ({ width, height }) => {
             <Canvas 
                 shadows 
                 camera={{ 
-                    // Reduced distance from 240 to 180 for closer view
                     position: [180 * Math.sin(-Math.PI/6), 10, 230 * Math.cos(-Math.PI/6)],
                     fov: 45,
                     near: 0.1,
@@ -139,14 +155,15 @@ const TourSlider = ({ width, height }) => {
                     }
                 }}
                 style={{ width: '100%', height: '100%' }}
+                dpr={[1, 2]} // Limit pixel ratio for better performance
             >
                 <Suspense fallback={null}>
-                    <SingleLightSource />
-                    <Environment preset="sunset" background={false} intensity={0.5} />
+                    <EnhancedLighting />
+                    <Environment preset="sunset" background={false} intensity={0.8} /> {/* Increased intensity to compensate for removed ambient light */}
                     <SunsetFog />
                     <Model />
                     <FixedOrbitControls />
-                    <SoftShadows size={10} focus={0.5} samples={16} />
+                    <SoftShadows size={10} focus={0.5} samples={8} />
                 </Suspense>
             </Canvas>
         </div>
