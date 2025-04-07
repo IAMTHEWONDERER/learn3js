@@ -5,15 +5,22 @@ import TourSlider from "./TourSlider";
 import Section2 from "./section2";
 import Section3 from "./section3";
 
-gsap.registerPlugin(ScrollTrigger);
+// Only register the plugin on the client side
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 const HorizontalScroll = () => {
   const sectionRef = useRef(null);
   const listWrapperRef = useRef(null);
   const listRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  // Set initial state safely for SSR
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Now it's safe to check window size
+    setIsMobile(window.innerWidth <= 768);
+
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
       ScrollTrigger.refresh();
@@ -100,100 +107,88 @@ const HorizontalScroll = () => {
       </div>
 
       <style jsx>{`
+        .section.side-scroll {
+          padding: 0;
+          margin: 0;
+          overflow: hidden;
+          width: 100%;
+          position: relative;
+        }
+        .side-scroll-list-wrapper {
+          position: relative;
+          width: 100%;
+          height: 100vh;
+          z-index: 2;
+        }
+        .side-scroll-list-wrapper.mobile {
+          height: auto;
+        }
+        .side-scroll-list {
+          position: absolute;
+          display: flex;
+          margin: 0;
+          padding: 0;
+          height: 100vh;
+        }
+        .side-scroll-list.mobile {
+          position: relative;
+          flex-direction: column;
+          height: auto;
+        }
+        .side-scroll-item {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          overflow: hidden;
+        }
+        .section-1,
+        .section-2,
+        .tour-slider,
+        .section-3 {
+          background-image: url("https://res.cloudinary.com/dyecicotf/image/upload/v1742398022/gain_dea69g.png");
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+        }
+        .section-content {
+          padding: 2rem;
+          color: white;
+          text-align: center;
+        }
+        .section-1 {
+          width: 100vw;
+          height: 100vh;
+        }
+        .section-2 {
+          width: ${isMobile ? "100%" : "60vw"};
+          height: ${isMobile ? "auto" : "100vh"};
+          min-height: 100vh;
+        }
+        .tour-slider {
+          width: ${isMobile ? "100%" : "80vw"};
+          height: ${isMobile ? "auto" : "100vh"};
+          min-height: 100vh;
+        }
+        .section-3 {
+          width: ${isMobile ? "100%" : "100vw"};
+          height: ${isMobile ? "auto" : "100vh"};
+          min-height: 100vh;
+        }
+
+        @media (max-width: 768px) {
           .section.side-scroll {
-            padding: 0;
-            margin: 0;
-            overflow: hidden;
-            width: 100%;
-            position: relative;
-            backgroundImage: "url('https://res.cloudinary.com/dyecicotf/image/upload/v1742398022/gain_dea69g.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center"
-        }}>
-          }
-          .side-scroll-list-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100vh;
-            z-index: 2;
-          }
-          .side-scroll-list-wrapper.mobile {
-            height: auto;
+            overflow: visible;
           }
           .side-scroll-list {
-            position: absolute;
-            display: flex;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-          }
-          .side-scroll-list.mobile {
-            position: relative;
-            flex-direction: column;
-            height: auto;
+            width: 100%;
           }
           .side-scroll-item {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            overflow: hidden;
-          }
-          /* Removed background image from all sections and added it only to specific sections */
-          .section-1, .section-2, .tour-slider {
-            background-image: url('/gain.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-          }
-          /* Section 3 might need its own background or styling */
-          .section-3 {
-            background-image: url('/gain.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-          }
-          .section-content {
-            padding: 2rem;
-            color: white;
-            text-align: center;
-          }
-          .section-1 {
-            width: 80vw;
-            height: 100vh;
-            backgroundImage: "url('https://res.cloudinary.com/dyecicotf/image/upload/v1742398022/gain_dea69g.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center"
-        }}>          }
-          .section-2 {
-            width: ${isMobile ? "100%" : "60vw"};
-            height: ${isMobile ? "auto" : "100vh"};
+            width: 100%;
             min-height: 100vh;
           }
-          .tour-slider {
-            width: ${isMobile ? "100%" : "80vw"};
-            height: ${isMobile ? "auto" : "100vh"};
-            min-height: 100vh;
-          }
-          .section-3 {
-            width: ${isMobile ? "100%" : "100vw"};
-            height: ${isMobile ? "auto" : "100vh"};
-            min-height: 100vh;
-          }
-
-          @media (max-width: 768px) {
-            .section.side-scroll {
-              overflow: visible;
-            }
-            .side-scroll-list {
-              width: 100%;
-            }
-            .side-scroll-item {
-              width: 100%;
-              min-height: 100vh;
-            }
-          }
-        `}</style>
+        }
+      `}</style>
     </section>
   );
 };

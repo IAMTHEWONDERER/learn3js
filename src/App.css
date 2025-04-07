@@ -1,0 +1,417 @@
+/* Import TailwindCSS */
+@import "tailwindcss";
+
+/* Hide scrollbar for WebKit browsers */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Import Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap");
+
+/* Import Normalize.css */
+@import url("https://unpkg.com/normalize.css") layer(normalize);
+
+/* Define CSS layers */
+@layer normalize, base, demo, stick, effect, scrollbar, debug;
+
+/* Hide scrollbar for IE, Edge, and Firefox */
+body {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Debug styles */
+@layer debug {
+  [data-debug="true"] .scroll_xj39_list_item {
+    outline: 0.05em dashed currentColor;
+  }
+
+  [data-debug="true"]
+    :is(.scroll_xj39_section_heading, .scroll_xj39_list_item:last-of-type) {
+    outline: 0.05em dashed canvasText;
+  }
+}
+
+/* Scrollbar styles */
+@layer scrollbar {
+  @property --hue {
+    initial-value: 0;
+    syntax: "<number>";
+    inherits: false;
+  }
+
+  @property --chroma {
+    initial-value: 0;
+    syntax: "<number>";
+    inherits: true;
+  }
+
+  @supports (animation-timeline: scroll()) and (animation-range: 0% 100%) {
+    [data-sync-scrollbar="true"][data-animate="true"] {
+      timeline-scope: --list;
+      scrollbar-color: oklch(var(--lightness) var(--chroma, 0) var(--hue)) #0000;
+      animation-name: change, chroma-on, chroma-off;
+      animation-fill-mode: both;
+      animation-timing-function: linear;
+      animation-range: entry 50% exit 50%, entry 40% entry 50%,
+        exit 30% exit 40%;
+      animation-timeline: --list;
+
+      .scroll_xj39_list {
+        view-timeline: --list;
+      }
+    }
+  }
+
+  @keyframes change {
+    to {
+      --hue: var(--end);
+    }
+  }
+
+  @keyframes chroma-on {
+    to {
+      --chroma: 0.3;
+    }
+  }
+
+  @keyframes chroma-off {
+    to {
+      --chroma: 0;
+    }
+  }
+}
+
+/* Effect styles */
+@layer effect {
+  :root {
+    --start: 0;
+    --end: 360;
+    --lightness: 65%;
+    --base-chroma: 0.3;
+  }
+
+  [data-theme="dark"] {
+    --lightness: 75%;
+  }
+
+  [data-theme="light"] {
+    --lightness: 65%;
+  }
+
+  .scroll_xj39_list {
+    --step: calc((var(--end) - var(--start)) / (var(--count) - 1));
+  }
+
+  .scroll_xj39_list_item:not(:last-of-type) {
+    color: oklch(
+      var(--lightness) var(--base-chroma)
+        calc(var(--start) + (var(--step) * var(--i)))
+    );
+  }
+}
+
+/* Sticky styles */
+@layer stick {
+  .scroll_xj39_content {
+    --font-level: 6;
+    display: flex;
+    line-height: 1.25;
+    width: 100%;
+    padding-left: 1rem;
+
+    @media (min-width: 640px) {
+      padding-left: 5rem;
+    }
+  }
+
+  .scroll_xj39_end_section {
+    min-height: 100vh;
+    display: flex;
+    place-items: center;
+    width: 100%;
+    justify-content: center;
+
+    .scroll_xj39_end_heading {
+      --font-level: 6;
+    }
+  }
+
+  .scroll_xj39_main {
+    width: 100%;
+  }
+
+  .scroll_xj39_content .scroll_xj39_section_heading {
+    position: sticky;
+    top: calc(50% - 0.5lh);
+    font-size: inherit;
+    margin: 0;
+    display: inline-block;
+    height: fit-content;
+    font-weight: 600;
+    z-index: 5; /* Ensure heading stays above other content */
+    transition: all 0.3s ease; /* Smooth transitions */
+  }
+
+  /* Special styling for when "0" aligns with "5" */
+  .scroll_xj39_content .scroll_xj39_section_heading.aligned-with-last {
+    position: relative;
+    top: auto;
+    transform: translateY(0);
+    margin-right: 0.25rem;
+  }
+
+  .scroll_xj39_list {
+    font-weight: 600;
+    padding-inline: 0;
+    margin: 0;
+    list-style-type: none;
+    width: 100%;
+  }
+
+  /* Enhanced snap settings */
+  [data-snap="true"] {
+    scroll-snap-type: y mandatory; /* Strict snapping */
+    scroll-behavior: smooth; /* Smooth scrolling */
+
+    .scroll_xj39_number_item,
+    .scroll_xj39_paragraph_item {
+      scroll-snap-align: center;
+      scroll-snap-stop: always; /* Force stopping at snap points */
+    }
+  }
+
+  .scroll_xj39_section_heading,
+  .scroll_xj39_list_item:last-of-type {
+    background: linear-gradient(
+      canvasText 50%,
+      color-mix(in oklch, canvas, canvasText 25%)
+    );
+    background-clip: text;
+    color: #0000;
+  }
+
+  /* Adjust spacing for the last number item */
+  .scroll_xj39_number_item:last-of-type {
+    padding-left: 2rem;
+
+    @media (min-width: 640px) {
+      padding-left: 2.5rem;
+    }
+  }
+}
+
+/* Demo styles */
+@layer demo {
+  .scroll_xj39_split_container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+
+    @media (min-width: 768px) {
+      flex-direction: row;
+    }
+  }
+
+  .scroll_xj39_numbers_column,
+  .scroll_xj39_paragraphs_column {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+
+    @media (min-width: 768px) {
+      width: 50%;
+    }
+  }
+
+  .scroll_xj39_header {
+    min-height: 50vh;
+    display: flex;
+    place-items: center;
+    width: 100%;
+    padding-inline: 1rem;
+
+    @media (min-width: 640px) {
+      min-height: 100vh;
+      padding-inline: 5rem;
+    }
+  }
+
+  .scroll_xj39_title {
+    --font-size-min: 16;
+    --font-level: 6;
+    text-wrap: pretty;
+    line-height: 0.8;
+    margin: 0;
+    background: linear-gradient(
+      canvasText 60%,
+      color-mix(in oklch, canvas, canvasText)
+    );
+    background-clip: text;
+    color: #0000;
+
+    @media (min-width: 640px) {
+      --font-size-min: 24;
+      --font-level: 8;
+    }
+  }
+
+  /* Number items */
+  .scroll_xj39_number_item {
+    --font-level: 6;
+    font-size: inherit;
+    margin-bottom: 25vh; /* Fixed consistent spacing */
+    text-align: left;
+    position: relative;
+
+    &:last-of-type {
+      display: flex;
+      align-items: center;
+    }
+
+    @media (max-width: 640px) {
+      margin-bottom: 20vh; /* Adjust for smaller screens */
+    }
+  }
+
+  /* Paragraph items */
+  .scroll_xj39_paragraph_item {
+    font-size: 1rem;
+    margin-bottom: 25vh; /* Match spacing with numbers */
+    font-weight: 400;
+    line-height: 1.5;
+    max-width: 90%;
+    text-align: left;
+    margin-left: 0;
+    margin-right: auto;
+
+    &:last-of-type {
+      padding-left: 0; /* Reset padding */
+    }
+
+    @media (min-width: 640px) {
+      max-width: 90%;
+      font-size: 1.1rem;
+    }
+
+    @media (min-width: 768px) {
+      max-width: 80%;
+    }
+
+    @media (max-width: 640px) {
+      margin-bottom: 20vh; /* Must match number items on mobile */
+    }
+  }
+
+  /* Align paragraphs with their corresponding numbers */
+  .scroll_xj39_paragraphs_column .scroll_xj39_paragraph_item {
+    position: relative;
+  }
+
+  .scroll_xj39_content_container {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  /* Consistent padding for both columns */
+  .scroll_xj39_numbers_column .scroll_xj39_content_container,
+  .scroll_xj39_paragraphs_column .scroll_xj39_content_container {
+    justify-content: flex-start;
+    padding-right: 1rem;
+
+    @media (min-width: 640px) {
+      padding-right: 2rem;
+    }
+  }
+
+  /* Lists in both columns */
+  .scroll_xj39_numbers_column .scroll_xj39_list,
+  .scroll_xj39_paragraphs_column .scroll_xj39_list {
+    width: 100%;
+    padding-left: 0;
+  }
+
+  /* Responsive adaptations */
+  @media (max-width: 640px) {
+    .scroll_xj39_content {
+      padding-left: 0.75rem;
+    }
+
+    .scroll_xj39_title {
+      --font-size-min: 14;
+      --font-level: 5;
+    }
+  }
+}
+
+/* Base styles */
+@layer base {
+  :root {
+    --font-size-min: 14;
+    --font-size-max: 20;
+    --font-ratio-min: 1.1;
+    --font-ratio-max: 1.33;
+    --font-width-min: 375;
+    --font-width-max: 1500;
+  }
+
+  html {
+    color-scheme: light dark;
+    scroll-behavior: smooth; /* Smooth scrolling */
+  }
+
+  [data-theme="light"] {
+    color-scheme: light only;
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark only;
+  }
+
+  :where(.scroll_xj39_fluid) {
+    --fluid-min: calc(
+      var(--font-size-min) * pow(var(--font-ratio-min), var(--font-level, 0))
+    );
+    --fluid-max: calc(
+      var(--font-size-max) * pow(var(--font-ratio-max), var(--font-level, 0))
+    );
+    --fluid-preferred: calc(
+      (var(--fluid-max) - var(--fluid-min)) /
+        (var(--font-width-max) - var(--font-width-min))
+    );
+    --fluid-type: clamp(
+      (var(--fluid-min) / 16) * 1rem,
+      ((var(--fluid-min) / 16) * 1rem) -
+        (((var(--fluid-preferred) * var(--font-width-min)) / 16) * 1rem) +
+        (var(--fluid-preferred) * var(--variable-unit, 100vi)),
+      (var(--fluid-max) / 16) * 1rem
+    );
+    font-size: var(--fluid-type);
+  }
+
+  body {
+    display: grid;
+    place-items: center;
+    background: light-dark(white, black);
+    min-height: 100vh;
+    font-family: "Geist", "SF Pro Text", "SF Pro Icons", "AOS Icons",
+      "Helvetica Neue", Helvetica, Arial, sans-serif, system-ui;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Utilities */
+  .scroll_xj39_sr_only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}

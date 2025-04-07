@@ -1,9 +1,11 @@
+@import "tailwindcss";
+
 @font-face {
-    font-family: 'Quinn';
-    src: url('/fonts/Quinn-Bold.ttf') format('truetype');
+  font-family: "Quinn";
+  src: url("/fonts/Quinn-Bold.ttf") format("truetype");
 }
 
 body {
-    margin: 0;
-    font-family: 'Quinn', sans-serif;
+  margin: 0;
+  font-family: "Quinn", sans-serif;
 }
