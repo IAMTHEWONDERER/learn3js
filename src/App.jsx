@@ -44,124 +44,128 @@ const App = () => {
         "(animation-timeline: scroll()) and (animation-range: 0% 100%)"
       )
     ) {
-      // Get numbers and paragraphs
-      const numbersItems = gsap.utils.toArray(
+      // Get numbers and sections
+      const numberItems = gsap.utils.toArray(
         ".scroll_xj39_numbers_column .scroll_xj39_number_item"
       );
-      const paragraphsItems = gsap.utils.toArray(
-        ".scroll_xj39_paragraphs_column .scroll_xj39_paragraph_item"
-      );
       const sectionHeading = sectionHeadingRef.current;
-
-      // Store all items for reference
-      itemsRef.current = [...numbersItems, ...paragraphsItems];
-
-      // Set initial opacity states
-      gsap.set(numbersItems, { opacity: (i) => (i !== 0 ? 0.2 : 1) });
-      gsap.set(paragraphsItems, { opacity: (i) => (i !== 0 ? 0 : 1) });
-
-      // Clear any existing ScrollTrigger instances
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-
-      // Create synchronized animations for each pair
-      numbersItems.forEach((item, index) => {
-        const paragraph = paragraphsItems[index];
-
-        ScrollTrigger.create({
-          trigger: item,
+      const endSection = document.querySelector(".scroll_xj39_end_section");
+      
+      // Clean up any existing ScrollTrigger instances
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      
+      // Store references
+      itemsRef.current = [...numberItems];
+      
+      // Create a master timeline for coordinated animations
+      const masterTimeline = gsap.timeline();
+      
+      // Set up opacity animations (similar to the reference code)
+      gsap.set(numberItems, { opacity: (i) => (i !== 0 ? 0.8 : 1) });
+      
+      const dimmer = gsap.timeline()
+        .to(numberItems.slice(1), {
+          opacity: 1,
+          stagger: 0.5,
+        })
+        .to(
+          numberItems.slice(0, numberItems.length - 1),
+          {
+            opacity: 0.8,
+            stagger: 0.5,
+          },
+          0
+        );
+      
+      // Set initial state of the heading
+      if (sectionHeading) {
+        gsap.set(sectionHeading, {
+          y: "calc(50% - 0.5lh)",
+          position: "sticky",
+          top: "calc(50% - 0.5lh)",
+        });
+      }
+      
+      // Create heading animation for the last item
+      const headingAnimation = gsap.timeline({
+        scrollTrigger: {
+          trigger: numberItems[numberItems.length - 1],
           start: "center center",
-          end: "center center+=100",
+          end: "bottom top",
           onEnter: () => {
-            gsap.to(numbersItems, { opacity: 0.2, duration: 0.3 });
-            gsap.to(paragraphsItems, { opacity: 0, duration: 0.3 });
-            gsap.to(item, { opacity: 1, duration: 0.3 });
-            gsap.to(paragraph, { opacity: 1, duration: 0.3 });
-
-            // Handle sticky behavior for "0" and alignment with "5"
-            if (index === numbersItems.length - 1 && sectionHeading) {
+            sectionHeading.classList.add("aligned-with-last");
+          },
+          onLeaveBack: () => {
+            sectionHeading.classList.remove("aligned-with-last");
+          },
+          onUpdate: (self) => {
+            // When we reach the last number, smoothly transition the heading
+            if (self.progress > 0) {
+              // Calculate position based on scroll progress
+              const progress = Math.min(1, self.progress * 2); // Double speed for quicker alignment
+              
+              // Apply position based on progress
+              if (progress < 1) {
+                gsap.to(sectionHeading, {
+                  y: `calc((1 - ${progress}) * (50% - 0.5lh))`,
+                  position: progress >= 0.9 ? "relative" : "sticky", 
+                  top: progress >= 0.9 ? "auto" : "calc(50% - 0.5lh)",
+                  duration: 0.1,
+                  overwrite: true
+                });
+              } else {
+                gsap.set(sectionHeading, {
+                  y: 0,
+                  position: "relative",
+                  top: "auto"
+                });
+              }
+            } else {
+              // When scrolling back, restore sticky positioning
               gsap.to(sectionHeading, {
+                y: "calc(50% - 0.5lh)",
+                position: "sticky",
+                top: "calc(50% - 0.5lh)",
+                duration: 0.1,
+                overwrite: true
+              });
+            }
+          },
+          markers: config.debug
+        }
+      });
+      
+      // Create a ScrollTrigger for the end section
+      if (endSection) {
+        ScrollTrigger.create({
+          trigger: endSection,
+          start: "top bottom-=50",
+          onEnter: () => {
+            // Ensure heading stays in relative position when scrolling to fin section
+            if (sectionHeading) {
+              gsap.set(sectionHeading, {
                 y: 0,
                 position: "relative",
-                top: "auto",
-                duration: 0.3,
-                onComplete: () => {
-                  sectionHeading.classList.add("aligned-with-last");
-                },
+                top: "auto"
               });
-            } else if (sectionHeading) {
-              gsap.to(sectionHeading, {
-                y: "calc(50% - 0.5lh)",
-                position: "sticky",
-                top: "calc(50% - 0.5lh)",
-                duration: 0.3,
-                onComplete: () => {
-                  sectionHeading.classList.remove("aligned-with-last");
-                },
-              });
+              sectionHeading.classList.add("aligned-with-last");
             }
           },
-          onEnterBack: () => {
-            gsap.to(numbersItems, { opacity: 0.2, duration: 0.3 });
-            gsap.to(paragraphsItems, { opacity: 0, duration: 0.3 });
-            gsap.to(item, { opacity: 1, duration: 0.3 });
-            gsap.to(paragraph, { opacity: 1, duration: 0.3 });
-
-            if (sectionHeading) {
-              gsap.to(sectionHeading, {
-                y: "calc(50% - 0.5lh)",
-                position: "sticky",
-                top: "calc(50% - 0.5lh)",
-                duration: 0.3,
-              });
-            }
-          },
-          id: `number-${index}`,
-          markers: config.debug,
+          markers: config.debug
         });
-      });
-
-      // Snapping configuration
-      const snapTriggers = numbersItems.map((item) =>
-        ScrollTrigger.create({
-          trigger: item,
-          start: "center center",
-          markers: config.debug,
-        })
-      );
-
+      }
+      
+      // Create opacity/dimmer scrub
       const dimmerScrub = ScrollTrigger.create({
-        trigger: numbersItems[0],
-        endTrigger: numbersItems[numbersItems.length - 1],
+        trigger: numberItems[0],
+        endTrigger: numberItems[numberItems.length - 1],
         start: "center center",
         end: "center center",
+        animation: dimmer,
         scrub: 0.2,
-        snap: config.snap
-          ? {
-              snapTo: (value, self) => {
-                const direction = self.direction;
-                const positions = snapTriggers.map(
-                  (trigger) => trigger.start / ScrollTrigger.maxScroll(window)
-                );
-                let closestPosition;
-                if (direction > 0) {
-                  closestPosition =
-                    positions.find((pos) => pos > value) ||
-                    positions[positions.length - 1];
-                } else {
-                  closestPosition =
-                    [...positions].reverse().find((pos) => pos < value) ||
-                    positions[0];
-                }
-                return closestPosition;
-              },
-              duration: { min: 0.2, max: 1 },
-              delay: 0.1,
-              ease: "power1.inOut",
-            }
-          : false,
       });
-
-      // Color animation
+      
+      // Color animation (hue change)
       const scroller = gsap.timeline().fromTo(
         document.documentElement,
         {
@@ -172,16 +176,16 @@ const App = () => {
           ease: "none",
         }
       );
-
+      
       const scrollerScrub = ScrollTrigger.create({
-        trigger: numbersItems[0],
-        endTrigger: numbersItems[numbersItems.length - 1],
+        trigger: numberItems[0],
+        endTrigger: numberItems[numberItems.length - 1],
         start: "center center",
         end: "center center",
         animation: scroller,
         scrub: 0.2,
       });
-
+      
       // Chroma animations
       const chromaEntry = gsap.fromTo(
         document.documentElement,
@@ -193,13 +197,13 @@ const App = () => {
           ease: "none",
           scrollTrigger: {
             scrub: 0.2,
-            trigger: numbersItems[0],
+            trigger: numberItems[0],
             start: "center center+=40",
             end: "center center",
           },
         }
       );
-
+      
       const chromaExit = gsap.fromTo(
         document.documentElement,
         {
@@ -210,13 +214,60 @@ const App = () => {
           ease: "none",
           scrollTrigger: {
             scrub: 0.2,
-            trigger: numbersItems[numbersItems.length - 1],
+            trigger: numberItems[numberItems.length - 1],
             start: "center center",
             end: "center center-=40",
           },
         }
       );
-
+      
+      // Add snap functionality if enabled
+      if (config.snap) {
+        // Create snap points
+        const snapPoints = numberItems.map(item => {
+          return ScrollTrigger.create({
+            trigger: item,
+            start: "center center",
+            markers: config.debug
+          });
+        });
+        
+        // Create a ScrollTrigger that controls snapping
+        // but only until we reach the last number
+        ScrollTrigger.create({
+          trigger: numberItems[0],
+          endTrigger: endSection,
+          start: "center center",
+          end: "top bottom",
+          snap: {
+            snapTo: (value, self) => {
+              // Don't snap when scrolling past the last number
+              if (self.direction > 0 && self.progress > 0.9) {
+                return value;
+              }
+              
+              const positions = snapPoints.map(
+                trigger => trigger.start / ScrollTrigger.maxScroll(window)
+              );
+              
+              // Find closest position based on scroll direction
+              let closestPosition;
+              if (self.direction > 0) {
+                closestPosition = positions.find(pos => pos > value) || positions[positions.length - 1];
+              } else {
+                closestPosition = [...positions].reverse().find(pos => pos < value) || positions[0];
+              }
+              
+              return closestPosition;
+            },
+            duration: { min: 0.2, max: 0.6 },
+            delay: 0.1,
+            ease: "power2.out"
+          },
+          markers: config.debug
+        });
+      }
+      
       // Store references for cleanup
       scrubRefsRef.current = {
         dimmerScrub,
@@ -239,21 +290,12 @@ const App = () => {
     };
   }, []);
 
-  // Use single digits (1-5) for the actual numbers since "0" is separate
+  // Use single digits (1-5) for the actual numbers
   const numbersContent = ["1", "2", "3", "4", "5"];
-
-  // Paragraphs content
-  const paragraphsContent = [
-    "Start with the basics. The foundation is what matters most when building something to last.",
-    "Explore the possibilities. Innovation happens when we push beyond conventional boundaries.",
-    "Refine your approach. Iteration is the key to perfection in any creative endeavor.",
-    "Test and validate. Assumptions must be challenged through rigorous experimentation.",
-    "Share your creation. The ultimate purpose of making is to connect with others.",
-  ];
 
   return (
     <div className="scroll_xj39_split_container">
-      {/* Left Column with Numbers */}
+      {/* Numbers Column */}
       <div className="scroll_xj39_numbers_column">
         <header className="scroll_xj39_header">
           <h1 className="scroll_xj39_title scroll_xj39_fluid">
@@ -287,44 +329,6 @@ const App = () => {
           </section>
           <section className="scroll_xj39_end_section">
             <h2 className="scroll_xj39_end_heading scroll_xj39_fluid">fin.</h2>
-          </section>
-        </main>
-      </div>
-
-      {/* Right Column with Paragraphs */}
-      <div className="scroll_xj39_paragraphs_column">
-        <header className="scroll_xj39_header">
-          <h1 className="scroll_xj39_title scroll_xj39_fluid">
-            scroll to
-            <br />
-            explore.
-          </h1>
-        </header>
-        <main className="scroll_xj39_main">
-          <section className="scroll_xj39_content scroll_xj39_fluid">
-            <h2 className="scroll_xj39_section_heading">
-              <span className="scroll_xj39_sr_only">explanations</span>
-            </h2>
-            <div className="scroll_xj39_content_container">
-              <ul
-                className="scroll_xj39_list"
-                aria-hidden="true"
-                style={{ "--count": paragraphsContent.length }}
-              >
-                {paragraphsContent.map((item, index) => (
-                  <li
-                    key={index}
-                    className="scroll_xj39_paragraph_item"
-                    style={{ "--i": index }}
-                  >
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
-          <section className="scroll_xj39_end_section">
-            <h2 className="scroll_xj39_end_heading scroll_xj39_fluid">end.</h2>
           </section>
         </main>
       </div>

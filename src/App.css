@@ -175,8 +175,7 @@ body {
     scroll-snap-type: y mandatory; /* Strict snapping */
     scroll-behavior: smooth; /* Smooth scrolling */
 
-    .scroll_xj39_number_item,
-    .scroll_xj39_paragraph_item {
+    .scroll_xj39_number_item {
       scroll-snap-align: center;
       scroll-snap-stop: always; /* Force stopping at snap points */
     }
@@ -214,15 +213,10 @@ body {
     }
   }
 
-  .scroll_xj39_numbers_column,
-  .scroll_xj39_paragraphs_column {
+  .scroll_xj39_numbers_column {
     width: 100%;
     display: flex;
     flex-direction: column;
-
-    @media (min-width: 768px) {
-      width: 50%;
-    }
   }
 
   .scroll_xj39_header {
@@ -275,49 +269,14 @@ body {
     }
   }
 
-  /* Paragraph items */
-  .scroll_xj39_paragraph_item {
-    font-size: 1rem;
-    margin-bottom: 25vh; /* Match spacing with numbers */
-    font-weight: 400;
-    line-height: 1.5;
-    max-width: 90%;
-    text-align: left;
-    margin-left: 0;
-    margin-right: auto;
-
-    &:last-of-type {
-      padding-left: 0; /* Reset padding */
-    }
-
-    @media (min-width: 640px) {
-      max-width: 90%;
-      font-size: 1.1rem;
-    }
-
-    @media (min-width: 768px) {
-      max-width: 80%;
-    }
-
-    @media (max-width: 640px) {
-      margin-bottom: 20vh; /* Must match number items on mobile */
-    }
-  }
-
-  /* Align paragraphs with their corresponding numbers */
-  .scroll_xj39_paragraphs_column .scroll_xj39_paragraph_item {
-    position: relative;
-  }
-
   .scroll_xj39_content_container {
     width: 100%;
     display: flex;
     justify-content: flex-start;
   }
 
-  /* Consistent padding for both columns */
-  .scroll_xj39_numbers_column .scroll_xj39_content_container,
-  .scroll_xj39_paragraphs_column .scroll_xj39_content_container {
+  /* Consistent padding for column */
+  .scroll_xj39_numbers_column .scroll_xj39_content_container {
     justify-content: flex-start;
     padding-right: 1rem;
 
@@ -326,9 +285,8 @@ body {
     }
   }
 
-  /* Lists in both columns */
-  .scroll_xj39_numbers_column .scroll_xj39_list,
-  .scroll_xj39_paragraphs_column .scroll_xj39_list {
+  /* Lists in column */
+  .scroll_xj39_numbers_column .scroll_xj39_list {
     width: 100%;
     padding-left: 0;
   }
