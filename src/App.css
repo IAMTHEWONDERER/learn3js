@@ -129,9 +129,9 @@ body {
   .scroll_xj39_end_section {
     min-height: 100vh;
     display: flex;
-    place-items: center;
-    width: 100%;
+    align-items: center;
     justify-content: center;
+    width: 100%;
 
     .scroll_xj39_end_heading {
       --font-level: 6;
@@ -228,7 +228,8 @@ body {
   .scroll_xj39_header {
     min-height: 50vh;
     display: flex;
-    place-items: center;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     padding-inline: 1rem;
 
