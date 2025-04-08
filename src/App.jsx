@@ -50,6 +50,7 @@ const App = () => {
       );
       const sectionHeading = sectionHeadingRef.current;
       const endSection = document.querySelector(".scroll_xj39_end_section");
+      const lastNumberItem = numberItems[numberItems.length - 1];
       
       // Clean up any existing ScrollTrigger instances
       ScrollTrigger.getAll().forEach(trigger => trigger.kill());
@@ -57,10 +58,7 @@ const App = () => {
       // Store references
       itemsRef.current = [...numberItems];
       
-      // Create a master timeline for coordinated animations
-      const masterTimeline = gsap.timeline();
-      
-      // Set up opacity animations (similar to the reference code)
+      // Set up opacity animations
       gsap.set(numberItems, { opacity: (i) => (i !== 0 ? 0.8 : 1) });
       
       const dimmer = gsap.timeline()
@@ -86,54 +84,70 @@ const App = () => {
         });
       }
       
-      // Create heading animation for the last item
-      const headingAnimation = gsap.timeline({
-        scrollTrigger: {
-          trigger: numberItems[numberItems.length - 1],
+      // Alignment for the heading with last number
+      // This is a critical part for the "0" to align with "5"
+      if (lastNumberItem && sectionHeading) {
+        const lastItemTrigger = ScrollTrigger.create({
+          trigger: lastNumberItem,
           start: "center center",
           end: "bottom top",
           onEnter: () => {
+            // When entering the last number, ensure perfect alignment
             sectionHeading.classList.add("aligned-with-last");
+            
+            // Ensure the heading is perfectly aligned with the last number
+            gsap.to(sectionHeading, {
+              y: 0,
+              position: "relative",
+              top: "auto",
+              duration: 0.1,
+              onComplete: () => {
+                // Create a wrapper for 0 and 5 to keep them aligned
+                const wrapper = document.createElement('div');
+                wrapper.className = 'zero-five-wrapper';
+                
+                // Check if wrapper doesn't already exist
+                if (!document.querySelector('.zero-five-wrapper')) {
+                  // Get the parent of the section heading
+                  const headingParent = sectionHeading.parentElement;
+                  const contentContainer = document.querySelector('.scroll_xj39_content_container');
+                  
+                  // Position the wrapper where the heading was
+                  headingParent.insertBefore(wrapper, sectionHeading);
+                  wrapper.appendChild(sectionHeading);
+                  wrapper.appendChild(lastNumberItem);
+                }
+              }
+            });
           },
           onLeaveBack: () => {
+            // When scrolling back from the last number, restore original layout
             sectionHeading.classList.remove("aligned-with-last");
-          },
-          onUpdate: (self) => {
-            // When we reach the last number, smoothly transition the heading
-            if (self.progress > 0) {
-              // Calculate position based on scroll progress
-              const progress = Math.min(1, self.progress * 2); // Double speed for quicker alignment
+            
+            // Check if wrapper exists and restore original structure
+            const wrapper = document.querySelector('.zero-five-wrapper');
+            if (wrapper) {
+              const headingParent = wrapper.parentElement;
+              const contentContainer = document.querySelector('.scroll_xj39_content_container');
+              const list = document.querySelector('.scroll_xj39_list');
               
-              // Apply position based on progress
-              if (progress < 1) {
-                gsap.to(sectionHeading, {
-                  y: `calc((1 - ${progress}) * (50% - 0.5lh))`,
-                  position: progress >= 0.9 ? "relative" : "sticky", 
-                  top: progress >= 0.9 ? "auto" : "calc(50% - 0.5lh)",
-                  duration: 0.1,
-                  overwrite: true
-                });
-              } else {
-                gsap.set(sectionHeading, {
-                  y: 0,
-                  position: "relative",
-                  top: "auto"
-                });
-              }
-            } else {
-              // When scrolling back, restore sticky positioning
+              // Restore original DOM structure
+              headingParent.insertBefore(sectionHeading, wrapper);
+              list.appendChild(lastNumberItem);
+              wrapper.remove();
+              
+              // Reset the heading style
               gsap.to(sectionHeading, {
                 y: "calc(50% - 0.5lh)",
                 position: "sticky",
                 top: "calc(50% - 0.5lh)",
-                duration: 0.1,
-                overwrite: true
+                duration: 0.1
               });
             }
           },
           markers: config.debug
-        }
-      });
+        });
+      }
       
       // Create a ScrollTrigger for the end section
       if (endSection) {
@@ -141,14 +155,14 @@ const App = () => {
           trigger: endSection,
           start: "top bottom-=50",
           onEnter: () => {
-            // Ensure heading stays in relative position when scrolling to fin section
+            // Ensure heading stays with last number when scrolling to fin section
             if (sectionHeading) {
+              sectionHeading.classList.add("aligned-with-last");
               gsap.set(sectionHeading, {
                 y: 0,
                 position: "relative",
                 top: "auto"
               });
-              sectionHeading.classList.add("aligned-with-last");
             }
           },
           markers: config.debug
@@ -233,17 +247,24 @@ const App = () => {
         });
         
         // Create a ScrollTrigger that controls snapping
-        // but only until we reach the last number
         ScrollTrigger.create({
           trigger: numberItems[0],
-          endTrigger: endSection,
+          endTrigger: numberItems[numberItems.length - 1],
           start: "center center",
-          end: "top bottom",
+          end: "bottom top",
           snap: {
             snapTo: (value, self) => {
-              // Don't snap when scrolling past the last number
-              if (self.direction > 0 && self.progress > 0.9) {
-                return value;
+              // Only snap when away from the end section
+              if (endSection) {
+                const endSectionTop = ScrollTrigger.create({
+                  trigger: endSection,
+                  start: "top bottom",
+                }).start / ScrollTrigger.maxScroll(window);
+                
+                // Disable snapping when close to or inside the end section
+                if (value >= endSectionTop - 0.05) {
+                  return value; // No snapping
+                }
               }
               
               const positions = snapPoints.map(
@@ -318,7 +339,9 @@ const App = () => {
                 {numbersContent.map((item, index) => (
                   <li
                     key={index}
-                    className="scroll_xj39_list_item scroll_xj39_number_item"
+                    className={`scroll_xj39_list_item scroll_xj39_number_item ${
+                      index === numbersContent.length - 1 ? "scroll_xj39_last_number" : ""
+                    }`}
                     style={{ "--i": index }}
                   >
                     {item}

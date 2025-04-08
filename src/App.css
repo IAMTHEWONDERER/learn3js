@@ -28,7 +28,7 @@ body {
   }
 
   [data-debug="true"]
-    :is(.scroll_xj39_section_heading, .scroll_xj39_list_item:last-of-type) {
+    :is(.scroll_xj39_section_heading, .scroll_xj39_number_item:last-of-type) {
     outline: 0.05em dashed canvasText;
   }
 }
@@ -104,7 +104,7 @@ body {
     --step: calc((var(--end) - var(--start)) / (var(--count) - 1));
   }
 
-  .scroll_xj39_list_item:not(:last-of-type) {
+  .scroll_xj39_number_item {
     color: oklch(
       var(--lightness) var(--base-chroma)
         calc(var(--start) + (var(--step) * var(--i)))
@@ -114,15 +114,48 @@ body {
 
 /* Sticky styles */
 @layer stick {
+  /* Row layout for each number-text pair */
+  .scroll_xj39_item_row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Zero row special styling */
+  .scroll_xj39_zero_row {
+    margin-bottom: 25vh;
+    padding-left: 3rem;
+  }
+
+  /* Cell for number */
+  .scroll_xj39_number_cell {
+    width: 80px;
+    min-width: 80px;
+    display: flex;
+    justify-content: flex-end;
+    padding-right: 1.5rem;
+  }
+
+  /* Cell for text */
+  .scroll_xj39_text_cell {
+    flex-grow: 1;
+    padding-left: 1.5rem;
+  }
+
   .scroll_xj39_content {
     --font-level: 6;
     display: flex;
+    flex-direction: column;
     line-height: 1.25;
     width: 100%;
     padding-left: 1rem;
+    padding-right: 1rem;
 
     @media (min-width: 640px) {
-      padding-left: 5rem;
+      padding-left: 3rem;
+      padding-right: 3rem;
     }
   }
 
@@ -132,6 +165,8 @@ body {
     place-items: center;
     width: 100%;
     justify-content: center;
+    /* Allow scrolling past the last number to the fin section */
+    scroll-snap-align: none;
 
     .scroll_xj39_end_heading {
       --font-level: 6;
@@ -142,6 +177,7 @@ body {
     width: 100%;
   }
 
+  /* Styling for the "0" heading */
   .scroll_xj39_content .scroll_xj39_section_heading {
     position: sticky;
     top: calc(50% - 0.5lh);
@@ -159,7 +195,29 @@ body {
     position: relative;
     top: auto;
     transform: translateY(0);
+  }
+
+  /* Wrapper for the "0" and "5" alignment */
+  .zero-five-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  /* When "0" and "5" are aligned, ensure they stay that way */
+  .zero-five-wrapper .scroll_xj39_section_heading {
+    position: relative !important;
+    top: auto !important;
+    transform: none !important;
+    display: inline-flex;
+    align-items: center;
     margin-right: 0.25rem;
+  }
+
+  .zero-five-wrapper .scroll_xj39_last_number {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.25rem; /* Add a small margin between "0" and "5" */
   }
 
   .scroll_xj39_list {
@@ -170,19 +228,18 @@ body {
     width: 100%;
   }
 
-  /* Enhanced snap settings */
+  /* Modified snap settings to allow scrolling to fin section */
   [data-snap="true"] {
-    scroll-snap-type: y mandatory; /* Strict snapping */
+    scroll-snap-type: y proximity; /* Changed from mandatory to proximity */
     scroll-behavior: smooth; /* Smooth scrolling */
 
-    .scroll_xj39_number_item {
+    .scroll_xj39_list_item {
       scroll-snap-align: center;
-      scroll-snap-stop: always; /* Force stopping at snap points */
+      scroll-snap-stop: normal; /* Changed from always to normal */
     }
   }
 
-  .scroll_xj39_section_heading,
-  .scroll_xj39_list_item:last-of-type {
+  .scroll_xj39_section_heading {
     background: linear-gradient(
       canvasText 50%,
       color-mix(in oklch, canvas, canvasText 25%)
@@ -191,13 +248,11 @@ body {
     color: #0000;
   }
 
-  /* Adjust spacing for the last number item */
-  .scroll_xj39_number_item:last-of-type {
-    padding-left: 2rem;
-
-    @media (min-width: 640px) {
-      padding-left: 2.5rem;
-    }
+  /* Text paragraphs */
+  .scroll_xj39_text_cell p {
+    margin: 0;
+    line-height: 1.6;
+    font-size: 1rem;
   }
 }
 
@@ -207,16 +262,6 @@ body {
     display: flex;
     flex-direction: column;
     width: 100%;
-
-    @media (min-width: 768px) {
-      flex-direction: row;
-    }
-  }
-
-  .scroll_xj39_numbers_column {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
   }
 
   .scroll_xj39_header {
@@ -224,11 +269,11 @@ body {
     display: flex;
     place-items: center;
     width: 100%;
-    padding-inline: 1rem;
+    padding-inline: 2rem;
+    justify-content: center;
 
     @media (min-width: 640px) {
-      min-height: 100vh;
-      padding-inline: 5rem;
+      min-height: 70vh;
     }
   }
 
@@ -244,6 +289,7 @@ body {
     );
     background-clip: text;
     color: #0000;
+    text-align: center;
 
     @media (min-width: 640px) {
       --font-size-min: 24;
@@ -255,51 +301,49 @@ body {
   .scroll_xj39_number_item {
     --font-level: 6;
     font-size: inherit;
-    margin-bottom: 25vh; /* Fixed consistent spacing */
-    text-align: left;
+    font-weight: 600;
     position: relative;
+  }
 
-    &:last-of-type {
-      display: flex;
-      align-items: center;
-    }
+  /* List items */
+  .scroll_xj39_list_item {
+    margin-bottom: 25vh;
+  }
 
-    @media (max-width: 640px) {
-      margin-bottom: 20vh; /* Adjust for smaller screens */
-    }
+  .scroll_xj39_list_item:last-child {
+    margin-bottom: 0;
   }
 
   .scroll_xj39_content_container {
     width: 100%;
-    display: flex;
-    justify-content: flex-start;
-  }
-
-  /* Consistent padding for column */
-  .scroll_xj39_numbers_column .scroll_xj39_content_container {
-    justify-content: flex-start;
-    padding-right: 1rem;
-
-    @media (min-width: 640px) {
-      padding-right: 2rem;
-    }
-  }
-
-  /* Lists in column */
-  .scroll_xj39_numbers_column .scroll_xj39_list {
-    width: 100%;
-    padding-left: 0;
   }
 
   /* Responsive adaptations */
   @media (max-width: 640px) {
-    .scroll_xj39_content {
-      padding-left: 0.75rem;
-    }
-
     .scroll_xj39_title {
       --font-size-min: 14;
       --font-level: 5;
+    }
+    
+    /* Adjust layout for small screens */
+    .scroll_xj39_item_row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .scroll_xj39_number_cell {
+      width: 100%;
+      justify-content: flex-start;
+      padding-right: 0;
+      margin-bottom: 0.5rem;
+    }
+    
+    .scroll_xj39_text_cell {
+      padding-left: 0;
+    }
+    
+    .scroll_xj39_zero_row {
+      padding-left: 1.5rem;
     }
   }
 }
